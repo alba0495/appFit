@@ -385,7 +385,7 @@ public class FitTrack extends javax.swing.JFrame {
             XSSFWorkbook libro;
             XSSFSheet hoja;
 
-            // Si el archivo ya existe, lo abrimos; si no, creamos nuevo
+            // Si el archivo ya existe, lo abrimos, si no, creamos nuevo
             if (archivoExcel.exists()) {
                 FileInputStream entrada = new FileInputStream(archivoExcel);
                 libro = new XSSFWorkbook(entrada);
@@ -398,11 +398,11 @@ public class FitTrack extends javax.swing.JFrame {
                 libro = new XSSFWorkbook();
                 hoja = libro.createSheet("Entrenamientos");
 
-                //Ajustar las proporciones de las celdas antes de insertar el logo
+                //Ajusta las proporciones de las celdas antes de insertar el logo
                 hoja.setColumnWidth(0, 20 * 256); // columna A más ancha
                 hoja.createRow(0).setHeightInPoints(90); // fila 1 más alta
 
-                // Insertar el logo 
+                // Inserta el logo 
                 InputStream is = new FileInputStream(ruta_logo);
                 byte[] bytes = is.readAllBytes();
                 int indiceImagen = libro.addPicture(bytes, Workbook.PICTURE_TYPE_PNG);
@@ -412,7 +412,7 @@ public class FitTrack extends javax.swing.JFrame {
                 Drawing<?> dibujo = hoja.createDrawingPatriarch();
                 ClientAnchor anclaje = helper.createClientAnchor();
 
-                // Posición del logo
+                // Posicion del logo
                 anclaje.setCol1(0); // columna A
                 anclaje.setRow1(0); // fila 1
 
@@ -429,17 +429,17 @@ public class FitTrack extends javax.swing.JFrame {
                 filaEncabezado.createCell(3).setCellValue("Duración");
             }
 
-            // Buscar la última fila escrita
+            // Busca la última fila escrita
             int ultimaFila = hoja.getLastRowNum() + 1;
 
-            // Añadir nueva fila con los datos
+            // Añade nueva fila con los datos
             Row fila = hoja.createRow(ultimaFila);
             fila.createCell(0).setCellValue(fecha);
             fila.createCell(1).setCellValue(tipo);
             fila.createCell(2).setCellValue(subtipo);
             fila.createCell(3).setCellValue(duracion);
 
-            // Guardar cambios
+            // Guarda cambios
             FileOutputStream salida = new FileOutputStream(archivoExcel);
             libro.write(salida);
             salida.close();
