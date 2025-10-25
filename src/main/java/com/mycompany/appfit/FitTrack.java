@@ -11,9 +11,11 @@ import java.net.URL;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.ClientAnchor;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Drawing;
+import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Picture;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -75,6 +77,9 @@ public class FitTrack extends javax.swing.JFrame {
         TipoEjercicio.addItem("Fuerza");
         TipoEjercicio.addItem("Yoga");
         TipoEjercicio.addItem("Otros");
+        
+         //carga los datos del excel si hay
+        cargarDatosDesdeExcel();
 
     }
 
@@ -379,77 +384,115 @@ public class FitTrack extends javax.swing.JFrame {
         TipoEjercicio.setSelectedIndex(-1);
     }//GEN-LAST:event_BotonAñadirActionPerformed
 
-       private void guardarEnExcel(String fecha, String tipo, String subtipo, String duracion) {
+    private void cargarDatosDesdeExcel() {
         try {
-            File archivoExcel = new File(ruta_excel);
-            XSSFWorkbook libro;
-            XSSFSheet hoja;
+            File archivo = new File(ruta_excel);
+            if (!archivo.exists()) return; // Si no existe, no hace nada
 
-            // Si el archivo ya existe, lo abrimos, si no, creamos nuevo
-            if (archivoExcel.exists()) {
-                FileInputStream entrada = new FileInputStream(archivoExcel);
-                libro = new XSSFWorkbook(entrada);
-                hoja = libro.getSheet("Entrenamientos");
-                if (hoja == null) {
-                    hoja = libro.createSheet("Entrenamientos");
-                }
+            FileInputStream entrada = new FileInputStream(archivo);
+            XSSFWorkbook libro = new XSSFWorkbook(entrada);
+            XSSFSheet hoja = libro.getSheet("Entrenamientos");
+            if (hoja == null) {
+                libro.close();
                 entrada.close();
-            } else {
-                libro = new XSSFWorkbook();
-                hoja = libro.createSheet("Entrenamientos");
-
-                //Ajusta las proporciones de las celdas antes de insertar el logo
-                hoja.setColumnWidth(0, 20 * 256); // columna A más ancha
-                hoja.createRow(0).setHeightInPoints(90); // fila 1 más alta
-
-                // Inserta el logo 
-                InputStream is = new FileInputStream(ruta_logo);
-                byte[] bytes = is.readAllBytes();
-                int indiceImagen = libro.addPicture(bytes, Workbook.PICTURE_TYPE_PNG);
-                is.close();
-
-                CreationHelper helper = libro.getCreationHelper();
-                Drawing<?> dibujo = hoja.createDrawingPatriarch();
-                ClientAnchor anclaje = helper.createClientAnchor();
-
-                // Posicion del logo
-                anclaje.setCol1(0); // columna A
-                anclaje.setRow1(0); // fila 1
-
-                Picture pict = dibujo.createPicture(anclaje, indiceImagen);
-
-                // Escalado cuadrado (1.0, 1.0)
-                pict.resize(1.0, 1.0);
-
-                // Encabezados
-                Row filaEncabezado = hoja.createRow(2);
-                filaEncabezado.createCell(0).setCellValue("Fecha");
-                filaEncabezado.createCell(1).setCellValue("Tipo");
-                filaEncabezado.createCell(2).setCellValue("Subtipo");
-                filaEncabezado.createCell(3).setCellValue("Duración");
+                return;
             }
 
-            // Busca la última fila escrita
-            int ultimaFila = hoja.getLastRowNum() + 1;
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+            model.setRowCount(0); // limpia la tabla antes de cargar
 
-            // Añade nueva fila con los datos
-            Row fila = hoja.createRow(ultimaFila);
-            fila.createCell(0).setCellValue(fecha);
-            fila.createCell(1).setCellValue(tipo);
-            fila.createCell(2).setCellValue(subtipo);
-            fila.createCell(3).setCellValue(duracion);
+            // empieza desde la fila 3 (fila 2 son encabezados)
+            for (int i = 3; i <= hoja.getLastRowNum(); i++) {
+                Row fila = hoja.getRow(i);
+                if (fila != null) {
+                    String fecha = fila.getCell(0) != null ? fila.getCell(0).toString() : "";
+                    String tipo = fila.getCell(1) != null ? fila.getCell(1).toString() : "";
+                    String subtipo = fila.getCell(2) != null ? fila.getCell(2).toString() : "";
+                    String duracion = fila.getCell(3) != null ? fila.getCell(3).toString() : "";
+                    model.addRow(new Object[]{fecha, tipo, subtipo, duracion});
+                }
+            }
 
-            // Guarda cambios
-            FileOutputStream salida = new FileOutputStream(archivoExcel);
-            libro.write(salida);
-            salida.close();
             libro.close();
-
-            JOptionPane.showMessageDialog(this, "Datos guardados en Excel correctamente.");
+            entrada.close();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error al guardar en Excel: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, "Error al leer Excel: " + e.getMessage());
         }
     }
+    
+    
+    private void guardarEnExcel(String fecha, String tipo, String subtipo, String duracion) {
+    try {
+        File archivoExcel = new File(ruta_excel);
+        XSSFWorkbook libro;
+        XSSFSheet hoja;
+
+        if (archivoExcel.exists()) {
+            FileInputStream entrada = new FileInputStream(archivoExcel);
+            libro = new XSSFWorkbook(entrada);
+            hoja = libro.getSheet("Entrenamientos");
+            if (hoja == null) {
+                hoja = libro.createSheet("Entrenamientos");
+            }
+            entrada.close();
+        } else {
+            libro = new XSSFWorkbook();
+            hoja = libro.createSheet("Entrenamientos");
+
+            // Ajusta columnas y filas para el logo
+            hoja.setColumnWidth(0, 20 * 256); // columna A más ancha
+            hoja.createRow(0).setHeightInPoints(90); // fila 1 más alta
+
+            // Inserta el logo
+            InputStream is = new FileInputStream(ruta_logo);
+            byte[] bytes = is.readAllBytes();
+            int indiceImagen = libro.addPicture(bytes, Workbook.PICTURE_TYPE_PNG);
+            is.close();
+
+            CreationHelper helper = libro.getCreationHelper();
+            Drawing<?> dibujo = hoja.createDrawingPatriarch();
+            ClientAnchor anclaje = helper.createClientAnchor();
+            anclaje.setCol1(0);
+            anclaje.setRow1(0);
+            Picture pict = dibujo.createPicture(anclaje, indiceImagen);
+            pict.resize(1.0, 1.0);
+
+            // encabezado en negrita
+            Row filaEncabezado = hoja.createRow(2);
+            CellStyle estiloNegrita = libro.createCellStyle();
+            Font fuente = libro.createFont();
+            fuente.setBold(true);
+            estiloNegrita.setFont(fuente);
+
+            String[] encabezados = {"Fecha", "Tipo", "Subtipo", "Duración"};
+            for (int i = 0; i < encabezados.length; i++) {
+                filaEncabezado.createCell(i).setCellValue(encabezados[i]);
+                filaEncabezado.getCell(i).setCellStyle(estiloNegrita); // aplica negrita
+            }
+        }
+
+        // Busca la última fila escrita
+        int ultimaFila = hoja.getLastRowNum() + 1;
+
+        // Añade nueva fila con los datos
+        Row fila = hoja.createRow(ultimaFila);
+        fila.createCell(0).setCellValue(fecha);
+        fila.createCell(1).setCellValue(tipo);
+        fila.createCell(2).setCellValue(subtipo);
+        fila.createCell(3).setCellValue(duracion);
+
+        // Guarda cambios
+        FileOutputStream salida = new FileOutputStream(archivoExcel);
+        libro.write(salida);
+        salida.close();
+        libro.close();
+
+        JOptionPane.showMessageDialog(this, "Datos guardados en Excel correctamente.");
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, "Error al guardar en Excel: " + e.getMessage());
+    }
+}
+
     
     
     /**
