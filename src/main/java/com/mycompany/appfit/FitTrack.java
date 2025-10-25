@@ -422,76 +422,76 @@ public class FitTrack extends javax.swing.JFrame {
     
     
     private void guardarEnExcel(String fecha, String tipo, String subtipo, String duracion) {
-    try {
-        File archivoExcel = new File(ruta_excel);
-        XSSFWorkbook libro;
-        XSSFSheet hoja;
+        try {
+            File archivoExcel = new File(ruta_excel);
+            XSSFWorkbook libro;
+            XSSFSheet hoja;
 
-        if (archivoExcel.exists()) {
-            FileInputStream entrada = new FileInputStream(archivoExcel);
-            libro = new XSSFWorkbook(entrada);
-            hoja = libro.getSheet("Entrenamientos");
-            if (hoja == null) {
+            if (archivoExcel.exists()) {
+                FileInputStream entrada = new FileInputStream(archivoExcel);
+                libro = new XSSFWorkbook(entrada);
+                hoja = libro.getSheet("Entrenamientos");
+                if (hoja == null) {
+                    hoja = libro.createSheet("Entrenamientos");
+                }
+                entrada.close();
+            } else {
+                libro = new XSSFWorkbook();
                 hoja = libro.createSheet("Entrenamientos");
+
+                // Ajusta columnas y filas para el logo
+                hoja.setColumnWidth(0, 20 * 256); // columna A más ancha
+                hoja.createRow(0).setHeightInPoints(90); // fila 1 más alta
+
+                // Inserta el logo
+                InputStream is = new FileInputStream(ruta_logo);
+                byte[] bytes = is.readAllBytes();
+                int indiceImagen = libro.addPicture(bytes, Workbook.PICTURE_TYPE_PNG);
+                is.close();
+
+                CreationHelper helper = libro.getCreationHelper();
+                Drawing<?> dibujo = hoja.createDrawingPatriarch();
+                ClientAnchor anclaje = helper.createClientAnchor();
+                anclaje.setCol1(0);
+                anclaje.setRow1(0);
+                Picture pict = dibujo.createPicture(anclaje, indiceImagen);
+                pict.resize(1.0, 1.0);
+
+                // encabezado en negrita
+                Row filaEncabezado = hoja.createRow(2);
+                CellStyle estiloNegrita = libro.createCellStyle();
+                Font fuente = libro.createFont();
+                fuente.setBold(true);
+                estiloNegrita.setFont(fuente);
+
+                String[] encabezados = {"Fecha", "Tipo", "Subtipo", "Duración"};
+                for (int i = 0; i < encabezados.length; i++) {
+                    filaEncabezado.createCell(i).setCellValue(encabezados[i]);
+                    filaEncabezado.getCell(i).setCellStyle(estiloNegrita); // aplica negrita
+                }
             }
-            entrada.close();
-        } else {
-            libro = new XSSFWorkbook();
-            hoja = libro.createSheet("Entrenamientos");
 
-            // Ajusta columnas y filas para el logo
-            hoja.setColumnWidth(0, 20 * 256); // columna A más ancha
-            hoja.createRow(0).setHeightInPoints(90); // fila 1 más alta
+            // Busca la última fila escrita
+            int ultimaFila = hoja.getLastRowNum() + 1;
 
-            // Inserta el logo
-            InputStream is = new FileInputStream(ruta_logo);
-            byte[] bytes = is.readAllBytes();
-            int indiceImagen = libro.addPicture(bytes, Workbook.PICTURE_TYPE_PNG);
-            is.close();
+            // Añade nueva fila con los datos
+            Row fila = hoja.createRow(ultimaFila);
+            fila.createCell(0).setCellValue(fecha);
+            fila.createCell(1).setCellValue(tipo);
+            fila.createCell(2).setCellValue(subtipo);
+            fila.createCell(3).setCellValue(duracion);
 
-            CreationHelper helper = libro.getCreationHelper();
-            Drawing<?> dibujo = hoja.createDrawingPatriarch();
-            ClientAnchor anclaje = helper.createClientAnchor();
-            anclaje.setCol1(0);
-            anclaje.setRow1(0);
-            Picture pict = dibujo.createPicture(anclaje, indiceImagen);
-            pict.resize(1.0, 1.0);
+            // Guarda cambios
+            FileOutputStream salida = new FileOutputStream(archivoExcel);
+            libro.write(salida);
+            salida.close();
+            libro.close();
 
-            // encabezado en negrita
-            Row filaEncabezado = hoja.createRow(2);
-            CellStyle estiloNegrita = libro.createCellStyle();
-            Font fuente = libro.createFont();
-            fuente.setBold(true);
-            estiloNegrita.setFont(fuente);
-
-            String[] encabezados = {"Fecha", "Tipo", "Subtipo", "Duración"};
-            for (int i = 0; i < encabezados.length; i++) {
-                filaEncabezado.createCell(i).setCellValue(encabezados[i]);
-                filaEncabezado.getCell(i).setCellStyle(estiloNegrita); // aplica negrita
-            }
+            JOptionPane.showMessageDialog(this, "Datos guardados en Excel correctamente.");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error al guardar en Excel: " + e.getMessage());
         }
-
-        // Busca la última fila escrita
-        int ultimaFila = hoja.getLastRowNum() + 1;
-
-        // Añade nueva fila con los datos
-        Row fila = hoja.createRow(ultimaFila);
-        fila.createCell(0).setCellValue(fecha);
-        fila.createCell(1).setCellValue(tipo);
-        fila.createCell(2).setCellValue(subtipo);
-        fila.createCell(3).setCellValue(duracion);
-
-        // Guarda cambios
-        FileOutputStream salida = new FileOutputStream(archivoExcel);
-        libro.write(salida);
-        salida.close();
-        libro.close();
-
-        JOptionPane.showMessageDialog(this, "Datos guardados en Excel correctamente.");
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "Error al guardar en Excel: " + e.getMessage());
     }
-}
 
     
     
